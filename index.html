@@ -15,63 +15,69 @@
         var colors = ['rgba(93, 164, 214, 0.5)', 'rgba(255, 144, 14, 0.5)', 'rgba(44, 160, 101, 0.5)', 'rgba(255, 65, 54, 0.5)', 'rgba(207, 114, 255, 0.5)', 'rgba(127, 96, 0, 0.5)', 'rgba(255, 140, 184, 0.5)', 'rgba(79, 90, 117, 0.5)', 'rgba(222, 223, 0, 0.5)'];
 
         var data = [];
+        var urls = ['https://fb.fr.container-nv3.azure-cdn.eu/api/v2/statistics/prices/2019-05', 'https://fb.fr.container-nv3.azure-cdn.eu/api/v2/statistics/prices/2019-06', 'https://fb.fr.container-nv3.azure-cdn.eu/api/v2/statistics/prices/2019-07'];
         var settings = {
             "async": false,
             "crossDomain": true,
-            "url": "https://fb.fr.container-nv3.azure-cdn.eu/api/v2/statistics/prices/2019-06",
+            "url": "anyurlyoulike",
             "method": "GET"
+        };
+
+        for (var i = 0; i < urls.length; i++) {
+            console.log("querying.." + urls[i]);
+            doCall(urls[i]);
         }
 
-        doCallAndParseData();
-     
-        function doCallAndParseData() {
+        // calls a url
+        function doCall(url) {
+            settings.url = url;
 
-        // [{"plz":8054,"plz_name":"Graz-Straßgang","nr":535,"price_per_m2":10.7,"max_flat_price_per_m2":15.8,"min_flat_price_per_m2":7.6},
-        //{"plz":2340,"plz_name":"Mödling","nr":25,"price_per_m2":13.4,"max_flat_price_per_m2":20.0,"min_flat_price_per_m2":6.7},
+            // [{"plz":8054,"plz_name":"Graz-Straßgang","nr":535,"price_per_m2":10.7,"max_flat_price_per_m2":15.8,"min_flat_price_per_m2":7.6},
             $.ajax(settings).done(function (response) {
-
-                if (response != undefined) {
-                    console.log("response.length=" + response.length);
-                    //create array of citienames
-                    for (var i = 0; i < response.length; ++i) {
-                        //only unique cities
-                        if (response[i] != undefined) {
-                            if (!xData.includes("plz" + response[i].plz)) {
-                                xData.push("plz" + response[i].plz.toString());
-                            }
-                        } else {
-                            console.log("something undef in response[i] while creating unique plz array");
-                        }
-                    }
-                    console.log("found " + xData.length + " unique PLZs");
-                    //for all unique cities..
-                    for (var city = 0; city < xData.length; city++) {
-
-                        if (!yData.includes(city)) {
-                            yData[city] = [];
-                        }
-
-                        // for all objects in response
-                        for (var y = 0; y <= response.length; y++) {
-                            //if cityname matches responsecityname, add to yData[city]
-                            if (response[y] != undefined && xData[city] != undefined) {
-                                if (xData[city].toString() == "plz" + response[y].plz.toString()) {
-                                    yData[city].push(response[y].price_per_m2);
-                                }
-                            }
-                        }
-                    }
-
-                    // for (var arr = 0; arr <= yData.length; arr++) {
-                    //     console.log("ydata[" + arr + "]" + "==" + yData[arr]);
-                    // }
-                    // for (var arr = 0; arr <= xData.length; arr++) {
-                    //     console.log("xdata[" + arr + "]" + "==" + xData[arr]);
-                    // }
-        
-                }
+                console.log("response.length=" + response.length);
+                parseResponse(response);
             });
         }
+
+        // parses response from api
+        function parseResponse(response) {
+            //create array of citienames
+            for (var resp = 0; resp < response.length; resp++) {
+                console.log("CURRENT RESP: " + response[resp]);
+                if (response[resp] != undefined) {
+                    //only unique cities
+                    if (!xData.includes("plz" + response[resp].plz)) {
+                        //console.log("xData is missing " + response[i].plz);
+                        xData.push("plz" + response[resp].plz);
+                        //console.log("xData is now " + xData.length + " long");
+                    }
+                }
+            }
+
+            //for all unique cities..
+            for (var city = 0; city < xData.length; city++) {
+                console.log("current city: " + xData[city]);
+
+                if (!yData.includes(city)) {
+                    console.log("yData is missing " + city);
+                    yData[city] = [];
+                }
+
+                // for all objects in response
+                for (var y = 0; y < response.length; y++) {
+                    //if cityname matches responsecityname, add to yData[city]
+                    if (response[y] != undefined && xData[city] != undefined) {
+                        if (xData[city].toString() == "plz" + response[y].plz) {
+                            yData[city].push(response[y].price_per_m2);
+                        }
+                    } else {
+                        console.log("There is something undef: either response[y]:" + response[y] + " or xData[city]:" + xData[city]);
+                    }
+                }
+            }
+        }
+
+        // now we got the data
 
         //create a result-set for each PLZ in xData
         for (var i = 0; i < xData.length; i++) {
@@ -91,11 +97,14 @@
                 },
                 boxmean: 'sd'
             };
+
+            //if there is at least 1 o more datapoints and resulting price is bellow 40€/qm get rid of it
             if (result.y.length >= 1 && result.y < 40) {
-                console.log("resultPush: " + result.y);
                 data.push(result);
             } else {
+                continue;
                 console.log("only unique datapoints for PLZs?");
+                console.log(result.y);
             }
         };
 
