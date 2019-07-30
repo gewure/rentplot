@@ -1,0 +1,108 @@
+<head>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <!-- Plotly chart will be drawn inside this DIV -->
+    <div id="myDiv"></div>
+    <script>
+
+        var yData = [];
+        var xData = [[]];
+
+        var colors = ['rgba(93, 164, 214, 0.5)', 'rgba(255, 144, 14, 0.5)', 'rgba(44, 160, 101, 0.5)', 'rgba(255, 65, 54, 0.5)', 'rgba(207, 114, 255, 0.5)', 'rgba(127, 96, 0, 0.5)', 'rgba(255, 140, 184, 0.5)', 'rgba(79, 90, 117, 0.5)', 'rgba(222, 223, 0, 0.5)'];
+
+        var data = [];
+        var settings = {
+            "async": false,
+            "crossDomain": true,
+            "url": "https://fb.fr.container-nv3.azure-cdn.eu/api/v2/statistics/prices/2019-07",
+            "method": "GET"
+        }
+
+        getQuote();
+        // [{"plz":8054,"plz_name":"Graz-Straßgang","nr":535,"price_per_m2":10.7,"max_flat_price_per_m2":15.8,"min_flat_price_per_m2":7.6},
+        //{"plz":2340,"plz_name":"Mödling","nr":25,"price_per_m2":13.4,"max_flat_price_per_m2":20.0,"min_flat_price_per_m2":6.7},
+        function getQuote() {
+            $.ajax(settings).done(function (response) {
+                //create array of citienames
+                for (var i = 0; i < response.length; i++) {
+                    //only unique cities
+                    if (!xData.includes(response[i].plz_name)) {
+                        xData.push(response[i].plz_name);
+                    }
+                }
+                //for all unique cities..
+                for (var city = 0; city < xData.length; city++) {
+                    // for all objects in response
+                    if (!yData.includes(city)) { yData[city] = []; }
+                    for (var y = 0; y < response.length; y++) {
+                        //if cityname matches responsecityname, add to yData[city]
+                        if (xData[city] == response[y].plz_name) {
+                            yData[city].push(response[y].price_per_m2);
+                        }
+                    }
+                }
+
+                // yData[0] = [100];  //why is this undef?
+                // xData[0] = "neverland"; //and this also undef?
+                // //logging
+                // console.log("xdata length:" +xData.length);
+                // console.log("ydata length:" +yData.length);
+
+                // for (var arr = 0; arr < yData.length; arr++) {
+                //     console.log("ydata[" + arr + "]" + "==" + yData[arr]);
+                //     console.log("xdata[" + arr + "]" + "==" + xData[arr]);
+                // }
+            });
+        }
+
+        for (var i = 0; i < xData.length; i++) {
+            var result = {
+                type: 'box',
+                y: yData[i],
+                name: xData[i],
+                boxpoints: 'all',
+                jitter: 0.5,
+                whiskerwidth: 0.2,
+                fillcolor: 'cls',
+                marker: {
+                    size: 2
+                },
+                line: {
+                    width: 1
+                },
+                boxmean: 'sd'
+            };
+            data.push(result);
+        };
+
+        layout = {
+            title: 'Mieten',
+            yaxis: {
+                autorange: true,
+                showgrid: true,
+                zeroline: true,
+                dtick: 5,
+                gridcolor: 'rgb(255, 255, 255)',
+                gridwidth: 1,
+                zerolinecolor: 'rgb(255, 255, 255)',
+                zerolinewidth: 2
+            },
+            margin: {
+                l: 40,
+                r: 30,
+                b: 80,
+                t: 100
+            },
+            paper_bgcolor: 'rgb(243, 243, 243)',
+            plot_bgcolor: 'rgb(243, 243, 243)',
+            showlegend: false
+        };
+
+        Plotly.newPlot('myDiv', data, layout, { showSendToCloud: false });
+    
+    </script>
+</body>
